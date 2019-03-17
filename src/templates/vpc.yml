@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: VPC cloudformation definition
+
+Parameters: 
+  Name: 
+    Type: String
+  VpcCIDR: 
+    Type: String
+  Subnet1CIDR: 
+    Type: String
+  Subnet2CIDR: 
+    Type: String
+
+Resources: 
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: --.--.--.--/--
+      EnableDnsSupport: true
+      Tags:
+        - Key: keyname
+          Value: value
+
+Outputs:

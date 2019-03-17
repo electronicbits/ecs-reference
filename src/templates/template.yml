@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: App and pipeline and deploy configuration (uses github repo, S3, ECS + docker, ELB, VPC, Aurora RDS cluster, codepipelinea and codebuild)
+
+Parameters: 
+  GithubRepo:
+    Type: String
+    Description: Application that deploys
+  RepositoryBranch:
+    Type: String
+    Description: Github repo branch
+  DbPassword:
+    Type: String
+    Description: Backend DB password
+
+Metadata: 
+  AWS::Cloudformation::Interface:
+    ParameterLabels:
+      GithubRepo:
+        default: "Github repo name"
+      RepositoryBranch:
+        default: "Code repository branch name (master)"
+    ParameterGroups:
+      - Label:
+          default: Github repository configuration
+        Parameters:
+          - GithubRepo
+          - RepositoryBranch
+
+Resources: 
+  VPC:
+    Type: AWS::Cloudformation::Stack
+    Properties:
+      TemplateUrl: https://s3.amazonaws.com/architecture-template-files/vpc.yml
+      Parameters:
+        Name: !Ref AWS::StackName
+        VpcCIDR: 10.215.0.0/16
+        Subnet1CIDR: 10.215.10.0/24
+        Subnet2CIDR: 10.215.20.0/24
+  
+  LoadBalancer:
+    Type: AWS::Cloudformation::Stack
+    Properties:
+      TemplateUrl: https://s3.amazonaws.com/architecture-template-files/loadbalancer.yml
+      Parameters:
+        Subnets: !GetAtt VPC.Outputs.Subnets
+        VpcId: !GetAtt VPC.Outputs.VpcId
+
+  Cluster:
+    Type: AWS::Cloudformation::Stack
+    Properties:
+      TemplateUrl: https://s3.amazonaws.com/architecture-template-files/ecs-cluster.yml
+      Parameters:
+        SourceSecurityGroup: !GetAtt LoadBalancer.Outputs.SecurityGroup
+        Subnets: !GetAtt VPC.Outputs.Subnets
+        VpcId: !GetAtt VPC.Outputs.VpcId
+        Subnet1: !GetAtt VPC.Outputs.Subnet1
+        Subnet2: !GetAtt VPC.Outputs.Subnet2
+        VpcDefaultSG: !GetAtt VPC.Outputs.VpcDefaultSG
+  
+  Service:
+    Type: AWS::Cloudformation::Stack
+    Properties:
+      TemplateUrl: https://s3.amazonaws.com/architecture-template-files/service.yml
+      Parameters:
+        Cluster: !GetAtt Cluster.Outputs.ClusterName
+        TargetGroup: !GetAtt LoadBalancer.Outputs.TargetGroup
+
+  Database:
+    Type: AWS::Cloudformation::Stack
+    Properties:
+      TemplateUrl: https://s3.amazonaws.com/architecture-template-files/database.yml
+      Parameters:
+        TargetGroup: !GetAtt LoadBalancer.Outputs.TargetGroup
+        VpcId: !GetAtt VPC.Outputs.VpcId
+        DbPassword: !Ref DbPassword
+        Subnet1: !GetAtt VPC.Outputs.Subnet1
+        Subnet2: !GetAtt VPC.Outputs.Subnet2
+        Az1: !GetAtt VPC.Outputs.Az1
+        Az2: !GetAtt VPC.Outputs.Az2
+
+Mappings: 
+
+Conditions: 
+
+
+
+Outputs:
+  ServiceUrl:
+    Description: Backend URL ready to use
+    Value: !GetAtt LoadBalancer.Outputs.ServiceUrl
