@@ -41,7 +41,7 @@ Resources:
   LoadBalancer:
     Type: AWS::Cloudformation::Stack
     Properties:
-      TemplateUrl: https://s3.amazonaws.com/architecture-template-files/loadbalancer.yml
+      TemplateUrl: https://s3.amazonaws.com/architecture-template-files/load-balancer.yml
       Parameters:
         Subnets: !GetAtt VPC.Outputs.Subnets
         VpcId: !GetAtt VPC.Outputs.VpcId
@@ -78,12 +78,6 @@ Resources:
         Subnet2: !GetAtt VPC.Outputs.Subnet2
         Az1: !GetAtt VPC.Outputs.Az1
         Az2: !GetAtt VPC.Outputs.Az2
-
-Mappings: 
-
-Conditions: 
-
-
 
 Outputs:
   ServiceUrl:
